@@ -32,7 +32,12 @@ spring:
         corsConfigurations:
           '[/**]':
             allowedOrigins: # 允许哪些网站的跨域请求
-              - "http://localhost:8090"
+              - "http://localhost:9001"
+              - "http://localhost:9002"
+              - "http://127.0.0.1:9001"
+              - "http://127.0.0.1:9002"
+              - "http://192.168.80.1:9001"
+              - "http://192.168.80.1:9002"
             allowedMethods: # 允许的跨域ajax的请求方式
               - "GET"
               - "POST"
