@@ -5,6 +5,9 @@ import com.hmall.common.pojo.Item;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author 12141
  */
@@ -21,6 +24,8 @@ public class ItemDoc {
     private Integer commentCount;//评论数
     private Boolean isAD;//商品状态 1-正常，2-下架
 
+    private List<String> suggestion;
+
     public ItemDoc(Item item) {
         this.id = item.getId();
         this.name = item.getName();
@@ -31,5 +36,10 @@ public class ItemDoc {
         this.sold = item.getSold();
         this.commentCount = item.getCommentCount();
         this.isAD = item.getIsAD();
+        List<String> list = new ArrayList<>();
+        list.add(this.name);
+        list.add(this.category);
+        list.add(this.brand);
+        this.suggestion = list;
     }
 }

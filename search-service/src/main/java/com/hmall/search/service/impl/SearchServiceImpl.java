@@ -9,6 +9,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.FunctionBoostMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.CompletionSuggestOption;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.hmall.common.dto.PageDTO;
@@ -95,6 +96,29 @@ public class SearchServiceImpl implements SearchService {
                 result.put(key,list);
             }
             return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<String> suggestion(String key) {
+        try {
+            //1、查询
+            SearchResponse<ItemDoc> response = client.search(builder -> builder
+                            .index("mall")
+                            .suggest(builder1 -> builder1.text(key)
+                                    .suggesters("mySuggestion", builder2 -> builder2.completion(builder3 ->
+                                            builder3.field("suggestion").skipDuplicates(true).size(10))))
+                    , ItemDoc.class);
+            //2、解析结果
+            List<CompletionSuggestOption<ItemDoc>> options = response.suggest().get("mySuggestion").get(0).completion().options();
+            List<String> list = new ArrayList<>();
+            for (CompletionSuggestOption<ItemDoc> option : options) {
+                String text = option.text();
+                list.add(text);
+            }
+            return list;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

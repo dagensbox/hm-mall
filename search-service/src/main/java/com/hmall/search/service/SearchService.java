@@ -16,4 +16,6 @@ public interface SearchService {
     PageDTO<ItemDoc> list(SearchParam searchParam);
 
     Map<String, List<String>> filters(SearchParam searchParam);
+
+    List<String> suggestion(String key);
 }
