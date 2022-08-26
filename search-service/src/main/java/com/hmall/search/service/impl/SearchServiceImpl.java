@@ -10,6 +10,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.CompletionSuggestOption;
+import co.elastic.clients.elasticsearch.core.search.Highlight;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.hmall.common.dto.PageDTO;
@@ -18,6 +19,7 @@ import com.hmall.search.entity.SearchParam;
 import com.hmall.search.service.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -38,39 +40,71 @@ public class SearchServiceImpl implements SearchService {
     @Override
     public PageDTO<ItemDoc> list(SearchParam searchParam) {
         try {
-            Integer page = searchParam.getPage();
-            Integer size = searchParam.getSize();
-            String sortBy = searchParam.getSortBy();
-            Query finalQuery = getFinalQuery(searchParam);
-            SearchResponse<ItemDoc> searchResponse;
-            if ("default".equals(sortBy)) {
+            SearchResponse<ItemDoc> searchResponse = getItemDocSearchResponse(searchParam);
+            return getItemDocPageDTOByHandleResponse(searchResponse);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private SearchResponse<ItemDoc> getItemDocSearchResponse(SearchParam searchParam) throws IOException {
+        Integer page = searchParam.getPage();
+        Integer size = searchParam.getSize();
+        String key = searchParam.getKey();
+        boolean isKeyExist = !StringUtils.isEmpty(key);
+        String sortBy = searchParam.getSortBy();
+        Query finalQuery = getFinalQuery(searchParam);
+        SearchResponse<ItemDoc> searchResponse;
+        Highlight highlight = Highlight.of(builder1 -> builder1.fields("name", builder2 ->
+                builder2.preTags("<font color='red'>")
+                        .postTags("</font>").
+                        requireFieldMatch(false)));
+        if ("default".equals(sortBy)) {
+            if (isKeyExist) {
+                searchResponse = client.search(builder ->
+                        builder.index("mall").query(finalQuery).from((page - 1) * size).size(size).highlight(highlight), ItemDoc.class);
+            } else {
                 searchResponse = client.search(builder ->
                         builder.index("mall").query(finalQuery).from((page - 1) * size).size(size), ItemDoc.class);
+            }
+        } else {
+            if (isKeyExist) {
+                searchResponse = client.search(builder ->
+                                builder.index("mall").query(finalQuery).from((page - 1) * size).size(size)
+                                        .sort(builder1 -> builder1.field(builder2 -> builder2.field(sortBy).order(SortOrder.Desc)))
+                                        .highlight(highlight)
+                        , ItemDoc.class);
             } else {
                 searchResponse = client.search(builder ->
                                 builder.index("mall").query(finalQuery).from((page - 1) * size).size(size)
                                         .sort(builder1 -> builder1.field(builder2 -> builder2.field(sortBy).order(SortOrder.Desc)))
                         , ItemDoc.class);
             }
-            System.out.println(searchResponse);
-
-            PageDTO<ItemDoc> pageDTO = new PageDTO<>();
-            ArrayList<ItemDoc> itemDocs = new ArrayList<>();
-            if (searchResponse.hits().total() != null) {
-                long total = searchResponse.hits().total().value();
-                pageDTO.setTotal(total);
-                for (Hit<ItemDoc> hit : searchResponse.hits().hits()) {
-                    itemDocs.add(hit.source());
-                }
-            } else {
-                pageDTO.setTotal(0L);
-            }
-
-            pageDTO.setList(itemDocs);
-            return pageDTO;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
+        return searchResponse;
+    }
+
+    private static PageDTO<ItemDoc> getItemDocPageDTOByHandleResponse(SearchResponse<ItemDoc> searchResponse) {
+        PageDTO<ItemDoc> pageDTO = new PageDTO<>();
+        ArrayList<ItemDoc> itemDocs = new ArrayList<>();
+        if (searchResponse.hits().total() != null) {
+            long total = searchResponse.hits().total().value();
+            pageDTO.setTotal(total);
+            for (Hit<ItemDoc> hit : searchResponse.hits().hits()) {
+                ItemDoc source = hit.source();
+                Map<String, List<String>> listMap = hit.highlight();
+                if (!CollectionUtils.isEmpty(listMap)) {
+                    String name = listMap.get("name").get(0);
+                    source.setName(name);
+                }
+                itemDocs.add(source);
+            }
+        } else {
+            pageDTO.setTotal(0L);
+        }
+
+        pageDTO.setList(itemDocs);
+        return pageDTO;
     }
 
     @Override
@@ -93,7 +127,7 @@ public class SearchServiceImpl implements SearchService {
                 for (StringTermsBucket bucket : value.sterms().buckets().array()) {
                     list.add(bucket.key());
                 }
-                result.put(key,list);
+                result.put(key, list);
             }
             return result;
         } catch (IOException e) {
