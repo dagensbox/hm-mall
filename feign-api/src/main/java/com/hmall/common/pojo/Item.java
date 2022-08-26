@@ -1,4 +1,4 @@
-package com.hmall.item.pojo;
+package com.hmall.common.pojo;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;

@@ -2,7 +2,7 @@ package com.hmall.item.web;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmall.common.dto.PageDTO;
-import com.hmall.item.pojo.Item;
+import com.hmall.common.pojo.Item;
 import com.hmall.item.service.IItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
