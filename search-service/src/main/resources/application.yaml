@@ -1,0 +1,14 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: searchservice
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+feign:
+  httpclient:
+    enabled: true
+    max-connections: 200
+    max-connections-per-route: 50
