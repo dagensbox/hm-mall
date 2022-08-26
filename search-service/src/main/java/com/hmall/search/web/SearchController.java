@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author 12141
  */
@@ -27,5 +30,10 @@ public class SearchController {
     @PostMapping("/list")
     public PageDTO<ItemDoc> list(@RequestBody SearchParam searchParam){
         return searchService.list(searchParam);
+    }
+
+    @PostMapping("/filters")
+    public Map<String, List<String>> filters(@RequestBody SearchParam searchParam){
+        return searchService.filters(searchParam);
     }
 }

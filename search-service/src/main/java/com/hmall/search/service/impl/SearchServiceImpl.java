@@ -2,6 +2,9 @@ package com.hmall.search.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.FunctionBoostMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -18,7 +21,9 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author 12141
@@ -67,6 +72,34 @@ public class SearchServiceImpl implements SearchService {
         }
     }
 
+    @Override
+    public Map<String, List<String>> filters(SearchParam searchParam) {
+        try {
+            Map<String, Aggregation> map = new HashMap<>(8);
+            //1、添加分类
+            Aggregation categoryAgg = Aggregation.of(builder -> builder.terms(builder1 -> builder1.field("category").size(100)));
+            map.put("category", categoryAgg);
+            //2、添加品牌
+            Aggregation brandAgg = Aggregation.of(builder -> builder.terms(builder1 -> builder1.field("brand").size(1000)));
+            map.put("brand", brandAgg);
+
+            SearchResponse<ItemDoc> response = client.search(builder -> builder.index("mall").query(getFinalQuery(searchParam)).aggregations(map).size(0), ItemDoc.class);
+            Map<String, List<String>> result = new HashMap<>(4);
+            for (Map.Entry<String, Aggregate> stringAggregateEntry : response.aggregations().entrySet()) {
+                String key = stringAggregateEntry.getKey();
+                Aggregate value = stringAggregateEntry.getValue();
+                List<String> list = new ArrayList<>();
+                for (StringTermsBucket bucket : value.sterms().buckets().array()) {
+                    list.add(bucket.key());
+                }
+                result.put(key,list);
+            }
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static Query getFinalQuery(SearchParam searchParam) {
         String key = searchParam.getKey();
         String brand = searchParam.getBrand();
@@ -97,7 +130,7 @@ public class SearchServiceImpl implements SearchService {
         //5、价格条件
         if (minPrice != null && maxPrice != null) {
             Query query = Query.of(builder -> builder.range(builder1 ->
-                    builder1.field("price").lte(JsonData.of(maxPrice*100)).gte(JsonData.of(minPrice*100))));
+                    builder1.field("price").lte(JsonData.of(maxPrice * 100)).gte(JsonData.of(minPrice * 100))));
             queries.add(query);
         }
         //放入最终query
