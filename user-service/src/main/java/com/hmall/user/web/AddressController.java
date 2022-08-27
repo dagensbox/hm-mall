@@ -19,7 +19,7 @@ public class AddressController {
     @Autowired
     private IAddressService addressService;
 
-    @GetMapping("{id}")
+    @GetMapping("/{id}")
     public Address findAddressById(@PathVariable("id") Long id) {
         return addressService.getById(id);
     }

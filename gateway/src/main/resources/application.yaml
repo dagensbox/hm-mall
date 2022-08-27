@@ -16,13 +16,11 @@ spring:
         - id: orderservice
           uri: lb://orderservice
           predicates:
-            - Path=/order/**
-            - Path=/pay/**
+            - Path=/order/**,/pay/**
         - id: userservice
           uri: lb://userservice
           predicates:
-            - Path=/address/**
-            - Path=/user/**
+            - Path=/address/**,/user/**
         - id: searchservice
           uri: lb://searchservice
           predicates:
