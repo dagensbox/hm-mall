@@ -13,10 +13,13 @@ import co.elastic.clients.elasticsearch.core.search.CompletionSuggestOption;
 import co.elastic.clients.elasticsearch.core.search.Highlight;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
+import com.hmall.common.client.ItemClient;
 import com.hmall.common.dto.PageDTO;
+import com.hmall.common.pojo.Item;
 import com.hmall.search.entity.ItemDoc;
 import com.hmall.search.entity.SearchParam;
 import com.hmall.search.service.SearchService;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -36,6 +39,9 @@ public class SearchServiceImpl implements SearchService {
 
     @Autowired
     private ElasticsearchClient client;
+
+    @Autowired
+    ItemClient itemClient;
 
     @Override
     public PageDTO<ItemDoc> list(SearchParam searchParam) {
@@ -155,6 +161,30 @@ public class SearchServiceImpl implements SearchService {
             return list;
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void addItemById(Long id) {
+        try {
+            //1、根据id查到item
+            Item item = itemClient.getItemById(id);
+            //2、转换为文档类型
+            ItemDoc itemDoc = new ItemDoc(item);
+            //3、存入或更新
+            client.index(builder -> builder.index("mall").id(itemDoc.getId().toString()).document(itemDoc));
+        } catch (IOException e) {
+            System.out.println("mq更新插入出错了哦");
+            System.out.println(e);
+        }
+    }
+
+    @Override
+    public void deleteItemById(Long id) {
+        try {
+            client.delete(builder -> builder.index("mall").id(id.toString()));
+        } catch (IOException e) {
+            System.out.println("es中无这条数据，无法删除");
         }
     }
 

@@ -7,6 +7,12 @@ spring:
     nacos:
       discovery:
         server-addr: localhost:8848
+  rabbitmq:
+    host: localhost
+    port: 5672
+    virtual-host: /
+    username: itbox
+    password: 123123
 feign:
   httpclient:
     enabled: true

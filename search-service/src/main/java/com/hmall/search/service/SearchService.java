@@ -18,4 +18,8 @@ public interface SearchService {
     Map<String, List<String>> filters(SearchParam searchParam);
 
     List<String> suggestion(String key);
+
+    void addItemById(Long id);
+
+    void deleteItemById(Long id);
 }

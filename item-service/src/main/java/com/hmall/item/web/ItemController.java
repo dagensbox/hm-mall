@@ -1,11 +1,16 @@
 package com.hmall.item.web;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.hmall.common.constants.MqConstants;
 import com.hmall.common.dto.PageDTO;
 import com.hmall.common.pojo.Item;
 import com.hmall.item.service.IItemService;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/item")
@@ -13,6 +18,9 @@ public class ItemController {
 
     @Autowired
     private IItemService itemService;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     /**
      * 分页查询商品
@@ -50,6 +58,7 @@ public class ItemController {
     @PostMapping
     public void addItem(@RequestBody Item item) {
         itemService.save(item);
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_INSERT_KEY,item.getId());
     }
 
     /**
@@ -64,6 +73,10 @@ public class ItemController {
         item.setId(id);
         item.setStatus(status);
         itemService.updateById(item);
+        Map<String,Long> map = new HashMap<>();
+        map.put("id",id);
+        map.put("status", Long.valueOf(status));
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_UPDOWN_KEY,map);
     }
 
     /**
@@ -74,10 +87,12 @@ public class ItemController {
     @PutMapping
     public void updateItemById(@RequestBody Item item) {
         itemService.updateById(item);
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_INSERT_KEY,item.getId());
     }
 
     @DeleteMapping("/{id}")
     public void deleteItemById(@PathVariable Long id){
         itemService.removeById(id);
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_INSERT_KEY,id);
     }
 }
