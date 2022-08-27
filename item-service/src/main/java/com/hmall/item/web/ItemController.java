@@ -106,6 +106,7 @@ public class ItemController {
     public void deductStock(@PathVariable("itemId") Long itemId, @PathVariable("num") Integer num) {
         Item item = getItemById(itemId);
         item.setStock(item.getStock() - num);
+        itemService.updateById(item);
     }
 
 }

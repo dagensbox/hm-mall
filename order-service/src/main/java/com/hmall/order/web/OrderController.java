@@ -4,6 +4,8 @@ import com.hmall.common.client.ItemClient;
 import com.hmall.common.client.UserClient;
 import com.hmall.common.pojo.Address;
 import com.hmall.common.pojo.Item;
+import com.hmall.order.config.ExpirationMessagePostProcessor;
+import com.hmall.order.config.RabbitMQConfig;
 import com.hmall.order.interceptor.ThreadLocalUtils;
 import com.hmall.order.pojo.Order;
 import com.hmall.order.pojo.OrderDetail;
@@ -13,12 +15,15 @@ import com.hmall.order.service.IOrderDetailService;
 import com.hmall.order.service.IOrderLogisticsService;
 import com.hmall.order.service.IOrderService;
 import io.seata.spring.annotation.GlobalTransactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 
 @RestController
 @RequestMapping("/order")
+@Slf4j
 public class OrderController {
 
     @Autowired
@@ -35,6 +40,9 @@ public class OrderController {
 
     @Autowired
     private UserClient userClient;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @GetMapping("{id}")
     public Order queryOrderById(@PathVariable("id") Long orderId) {
@@ -88,6 +96,8 @@ public class OrderController {
         // 11）在item-service提供减库存接口，并编写FeignClient
         // 12）调用item-service的减库存接口
         itemClient.deductStock(item.getId(), param.getNum());
+        rabbitTemplate.convertAndSend(RabbitMQConfig.DELAY_QUEUE_NAME,orderId,new ExpirationMessagePostProcessor(1000L*60*30));
+        log.info("发送消息到{}",RabbitMQConfig.DELAY_QUEUE_ROUTING_KEY);
         return orderId;
     }
 }
