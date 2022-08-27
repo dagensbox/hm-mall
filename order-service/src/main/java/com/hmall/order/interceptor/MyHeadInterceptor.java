@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author 12141
  */
-@Component
 public class MyHeadInterceptor implements HandlerInterceptor {
 
     @Override

@@ -58,7 +58,7 @@ public class ItemController {
     @PostMapping
     public void addItem(@RequestBody Item item) {
         itemService.save(item);
-        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_INSERT_KEY,item.getId());
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE, MqConstants.MALL_INSERT_KEY, item.getId());
     }
 
     /**
@@ -73,10 +73,10 @@ public class ItemController {
         item.setId(id);
         item.setStatus(status);
         itemService.updateById(item);
-        Map<String,Long> map = new HashMap<>();
-        map.put("id",id);
+        Map<String, Long> map = new HashMap<>();
+        map.put("id", id);
         map.put("status", Long.valueOf(status));
-        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_UPDOWN_KEY,map);
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE, MqConstants.MALL_UPDOWN_KEY, map);
     }
 
     /**
@@ -87,12 +87,25 @@ public class ItemController {
     @PutMapping
     public void updateItemById(@RequestBody Item item) {
         itemService.updateById(item);
-        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_INSERT_KEY,item.getId());
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE, MqConstants.MALL_INSERT_KEY, item.getId());
     }
 
     @DeleteMapping("/{id}")
-    public void deleteItemById(@PathVariable Long id){
+    public void deleteItemById(@PathVariable Long id) {
         itemService.removeById(id);
-        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE,MqConstants.MALL_INSERT_KEY,id);
+        rabbitTemplate.convertAndSend(MqConstants.MALL_EXCHANGE, MqConstants.MALL_INSERT_KEY, id);
     }
+
+    /**
+     * 扣减库存
+     *
+     * @param itemId 商品id
+     * @param num    数量
+     */
+    @PutMapping("/stock/{itemId}/{num}")
+    public void deductStock(@PathVariable("itemId") Long itemId, @PathVariable("num") Integer num) {
+        Item item = getItemById(itemId);
+        item.setStock(item.getStock() - num);
+    }
+
 }
